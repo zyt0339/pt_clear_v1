@@ -18,8 +18,8 @@
 脚本依赖标签中有站点名称,需要先执行一遍 mp插件<下载任务分类与标签>(勾选 自动站点标签 补全下载历史的标签与分类(一次性任务))，让每个种子都添加上站点中文名标签。
 ### 下载脚本
 
-1. 方式一，打开```https://github.com/zyt0339/MoviePilot-Plugins/pt_clear_v1```,下载-下载ZIP，然后解压出pt_clear_v1.py。
-2. 方式二，打开```https://github.com/zyt0339/MoviePilot-Plugins/pt_clear_v1/raw/master/pt_clear_v1.py```复制全部脚本文字，在电脑新建pt_clear_v1.txt将前面文字粘贴进去，关闭保存，后缀名改为.py
+1. 方式一，打开```https://github.com/zyt0339/pt_clear_v1```,下载-下载ZIP，然后解压出pt_clear_v1.py。
+2. 方式二，打开```https://github.com/zyt0339/pt_clear_v1/blob/main/pt_clear_v1.py```复制全部脚本文字，在电脑新建pt_clear_v1.txt将前面文字粘贴进去，关闭保存，后缀名改为.py
 
 注意：这脚本在 nas 执行能使用全部能力，在电脑运行不能进行文件路径分析这些能力（没法用路径判断文件状态）
 
