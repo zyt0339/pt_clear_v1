@@ -113,7 +113,6 @@ import qbittorrentapi
 from qbittorrentapi import TrackerStatus
 # tr
 from transmission_rpc.client import Client
-from transmission_rpc import Status
 
 
 # 获取本机本机内网 ip
