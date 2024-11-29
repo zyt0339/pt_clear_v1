@@ -3,9 +3,9 @@
 # 使用前安装tr依赖库: pip install transmission-rpc -U
 # 脚本依赖标签中有站点名称,需要先执行一遍 mp插件<下载任务分类与标签>(勾选 自动站点标签 补全下载历史的标签与分类(一次性任务))
 # -------以下为配置开关-----
+# -------以下为配置开关-----
+# -------以下为配置开关-----
 # 是否真执行qb标签等, false时只打印模拟不生效
-import datetime
-
 SWITCH_REAL_INVOKE = True
 # 是否增加F-已入库\F-未入库标签\F-长期, 只有在 nas 上执行才能生效,因为本质是判断硬链接个数
 SWITCH_EMBY = True
@@ -15,7 +15,7 @@ TAG_LONG_KEEP = 'F-长期'
 # 辅种个数标记开关
 SWITCH_TORRENT_COUNT = True
 # 排除这些站点标签, 只要辅种站点中含有这些站, 就取消该文件所有种子的标记,应对某个站正在考核\长期保种场景
-EXCLUDE_CONTAINS_STATIONS = {"海豹", "海棠", TAG_LONG_KEEP, "KEEP"}
+EXCLUDE_CONTAINS_STATIONS = {"海豹", "海棠", TAG_LONG_KEEP, "KEEP", "待删"}
 LIMIT_TO_DELETE_THRESHOLD = 30  # <= x 的会标记, (<=1 就是单站辅种)
 LIMIT_TO_LONG_KEEP_THRESHOLD = 15  # >= x 的会 一起标记 TAG_LONG_KEEP
 PRINT_COPY_COUNT = 100  # 只会打印输出辅种数高于此值的种, >= 1000时不再打印
@@ -53,13 +53,15 @@ DEBUG_LOG = not SWITCH_REAL_INVOKE
 # 这些文件夹路径中的种子长期保种
 def condition_to_long_keep(content_path):
     return "DouBan.2021.11.11.Top.250.BluRay" in content_path \
-        or "成龙电影合集" in content_path \
-        or "斯皮尔伯格作品合集" in content_path \
-        or "周星驰.Stephen.Chow.1988-2017" in content_path \
-        or "冰与火之歌S01-S08" in content_path \
-        or "绝命毒师S01-S05." in content_path 
+           or "成龙电影合集" in content_path \
+           or "斯皮尔伯格作品合集" in content_path \
+           or "周星驰.Stephen.Chow.1988-2017" in content_path \
+           or "冰与火之歌S01-S08" in content_path \
+           or "绝命毒师S01-S05." in content_path
 
 
+# -------以上为配置开关------
+# -------以上为配置开关------
 # -------以上为配置开关------
 
 SERVER_HOST = "192.168.1.111"
@@ -67,15 +69,19 @@ QB_CONN_INFO = dict(
     host=SERVER_HOST,
     port=8085,
     username="xxx",
-    password="xxx",
+    password="xx",
 )
+# qb下载映射路径:下载真实路径，可以写多个，结尾不包含/
+QB_DOWNLOAD_PATH_MIRRORS = {}
 TR_CONN_INFO = dict(
     protocol='http',
     host=SERVER_HOST,
     port=9091,
     username="xxx",
-    password="xxx",
+    password="xx",
 )
+# tr下载映射路径:下载真实路径，可以写多个，结尾不包含/
+TR_DOWNLOAD_PATH_MIRRORS = {}
 
 TAG_COPY_COUNT = 'F-辅种%d'
 
@@ -102,6 +108,7 @@ TAG_IN_QB = 'F-辅种qb'
 SWITCH_TAG_DOLBY = False  # .dolby 文件标记开关
 TAG_DOLBY = 'F-dolby'  # .dolby 文件标记
 
+import datetime
 import os
 import socket
 import time
@@ -131,8 +138,10 @@ def readable_file_size(file_size, has_frac=True):
             return f"{file_size / 1024:.2f}KB"
         elif file_size < 1024 * 1024 * 1024:
             return f"{file_size / (1024 * 1024):.2f}MB"
-        else:
+        elif file_size < 1024 * 1024 * 1024 * 1024:
             return f"{file_size / (1024 * 1024 * 1024):.2f}GB"
+        else:
+            return f"{file_size / (1024 * 1024 * 1024 * 1024):.2f}TB"
     else:
         if file_size < 1024:
             return f"{file_size}B"
@@ -140,8 +149,10 @@ def readable_file_size(file_size, has_frac=True):
             return f"{file_size / 1024:.0f}KB"
         elif file_size < 1024 * 1024 * 1024:
             return f"{file_size / (1024 * 1024):.0f}MB"
-        else:
+        elif file_size < 1024 * 1024 * 1024 * 1024:
             return f"{file_size / (1024 * 1024 * 1024):.0f}GB"
+        else:
+            return f"{file_size / (1024 * 1024 * 1024 * 1024):.0f}TB"
 
 
 def prefix():
@@ -182,7 +193,7 @@ def add_tag_to_hash_and_print_internal(qb_or_tr, hash, name, tags, tag_name):
         hashs_qb_or_tr[tag_name] = set()
     hashs_qb_or_tr[tag_name].add(hash)
     if DEBUG_LOG:
-        print(f"{qb_or_tr}:增加标签: ({tag_name}) {name},{tags}")
+        print(f"{qb_or_tr}:增加标签 ({tag_name}), {name} {tags}")
 
 
 def qb_add_limit_upload_to_hash_and_print(site, qb_or_tr, torrent, limit_speed: int):
@@ -228,7 +239,8 @@ def set_limit():
                     if hash not in tr_hash_tags:
                         tr_hash_tags[hash] = set()
                     tr_hash_tags[hash].add(f"F-{readable_file_size(limit_speed * 1024, False)}")
-            print(f"{prefix()}tr 限速({readable_file_size(limit_speed * 1024, False)})种子个数: {len(hashs)}")
+            print(
+                f"{prefix()}tr 限速({readable_file_size(limit_speed * 1024, False)})种子个数: {len(hashs)}")
         else:
             if SWITCH_REAL_INVOKE:
                 tr_client.change_torrent(ids=list(hashs), upload_limit=0, upload_limited=False)
@@ -309,7 +321,7 @@ video_extensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.3gp', '.ts
                     '.flac', '.mp3', '.test',
                     '.iso', '.rmvb', '.rm', '.mpeg', '.mpg', '.asf', '.m4v', '.f4v', '.strm', '.tp']
 
-no_effective_extensions = ['.png', '.jpg', '.nfo', '.DS_Store', '.ass', '.xml']
+no_effective_extensions = ['.png', '.PNG', '.jpg', '.JPG', '.nfo', '.DS_Store', '.ass', '.xml']
 
 
 def is_effective_file(file_path):
@@ -410,12 +422,12 @@ def print_no_link_internal(folder_path):
                         all_file_size = all_file_size + size
                         dirt_file_size.update({file_abs_path: size})
                     break
-    print(f"------{folder_path} 下所有没有做种文件总大小: {readable_file_size(all_file_size)}, 列表如下")
+    print(f"---{folder_path} 下所有没有做种文件总大小: {readable_file_size(all_file_size)}, 列表如下:")
     # 排序打印
     sorted_keys = sorted(dirt_file_size.keys(), key=lambda p: p)
     sorted_dict = {key: dirt_file_size[key] for key in sorted_keys}
     for path, size in sorted_dict.items():
-        print(f"{path} 没有做种 | {readable_file_size(size)}")
+        print(f"------没有做种:{path} | {readable_file_size(size)}")
 
 
 def print_mulity_video_file_internal(directory):
@@ -469,7 +481,6 @@ if __name__ == '__main__':
         print(f"登录tr失败，错误：{e}")
     if not qb_client and not tr_client:
         exit(-2)
-    print(f"{now()}步骤1.第一遍遍历, 收集要标记的信息...")
     # 步骤1 第一遍遍历, 收集要标记的信息
     if qb_client:
         qb_sorted_torrents_infos = sorted(qb_client.torrents_info(), key=lambda x: x['name'])
@@ -479,18 +490,27 @@ if __name__ == '__main__':
         tr_sorted_torrents_infos = sorted(tr_client.get_torrents(), key=lambda x: x.name)
     else:
         tr_sorted_torrents_infos = []
+    print(f"qb:共{len(qb_sorted_torrents_infos)}个种子")
+    print(f"tr:共{len(tr_sorted_torrents_infos)}个种子")
+
+    print(f"{now()}步骤1.第一遍遍历, 收集要标记的信息...")
     # qb&tr key=save_path + torrent name,
     #       value=[0copy_count, 1all_torrent_tags, 2file_size, 3has_link, 4name, 5in qb, 6in tr]
     dirt_content_path_values = {}
-    # qb&tr 中的所有视频文件-非下载中, {'qb': {'path1': [torrent1,torrent2], 'path2': list()}, 'tr': {同左侧}}
+    # qb&tr 中的所有视频文件-非下载中(拆出不下载文件), {'qb': {'path1': [torrent1,torrent2], 'path2': list()}, 'tr': {同左侧}}
     torrent_video_files_dirt = {QB: {}, TR: {}}
-    # qb&tr 中的所有视频文件-下载中,结构同上
+    # qb&tr 中的所有视频文件-下载中(拆出不下载文件),结构同上
     torrent_video_files_downloading_dirt = {QB: {}, TR: {}}
     # qb 数据缓存,避免多次请求 api,{hash:torrent.files}
     qb_cache_hash_files = {}
     for torrent in qb_sorted_torrents_infos:
         save_path = torrent.save_path
-        files = torrent.files
+        for mirror, realPath in QB_DOWNLOAD_PATH_MIRRORS.items():
+            if save_path.startswith(mirror):
+                save_path = save_path.replace(mirror, realPath)
+                break
+        # files = torrent.files
+        files = [file for file in torrent.files if file.priority >= 1]  # 改为只筛选待下载的
         qb_cache_hash_files[torrent.hash] = files
         if torrent.state_enum.is_downloading:
             print(f"qb下载中跳过标记: {torrent.name}")
@@ -527,9 +547,14 @@ if __name__ == '__main__':
     tr_old_tags = set()
     for torrent in tr_sorted_torrents_infos:
         save_path = torrent.download_dir
+        for mirror, realPath in TR_DOWNLOAD_PATH_MIRRORS.items():
+            if save_path.startswith(mirror):
+                save_path = save_path.replace(mirror, realPath)
+                break
+        files = [file for file in torrent.get_files() if file.selected]  # 改为只筛选待下载的
         if torrent.status.downloading or torrent.status.download_pending:
             print(f"tr下载中跳过标记: {torrent.name}")
-            for file in torrent.get_files():
+            for file in files:
                 abs_file_path = os.path.join(save_path, file.name)
                 if is_effective_file(abs_file_path):
                     hashs_qb_or_tr = torrent_video_files_downloading_dirt[TR]
@@ -551,7 +576,7 @@ if __name__ == '__main__':
                 [1, set(current_torrent_tag_list), torrent.total_size,
                  has_linked_video_file(content_path), torrent.name, False, True]
 
-        for file in torrent.get_files():
+        for file in files:
             abs_file_path = os.path.join(save_path, file.name)
             if is_effective_file(abs_file_path):
                 hashs_qb_or_tr = torrent_video_files_dirt[TR]
@@ -569,6 +594,10 @@ if __name__ == '__main__':
     TAG_LONG_KEEP_in_EXCLUDE_CONTAINS_STATIONS = TAG_LONG_KEEP in EXCLUDE_CONTAINS_STATIONS
     for index, torrent in enumerate(qb_sorted_torrents_infos):
         save_path = torrent.save_path
+        for mirror, realPath in QB_DOWNLOAD_PATH_MIRRORS.items():
+            if save_path.startswith(mirror):
+                save_path = save_path.replace(mirror, realPath)
+                break
         files = qb_cache_hash_files[torrent.hash]
         if DEBUG_LOG:
             print(f'qb:{index + 1}/{size}')
@@ -615,8 +644,12 @@ if __name__ == '__main__':
                         file_size_LIMIT_TO_DELETE_THRESHOLD[content_path] = file_size
                 else:
                     if DEBUG_LOG:
-                        print(
-                            f"qb:未添加辅种数标记, 标签中(包含关联辅种)存在{intersection} {torrent.name}, {torrent.tags}")
+                        if intersection:
+                            print(
+                                f"qb:未添加辅种数标记, 标签中(包含关联辅种)存在{intersection} {torrent.name}, {torrent.tags}")
+                        elif siwtchLoneKeep_and_hit:
+                            print(
+                                f"qb:未添加辅种数标记, 标签中(包含关联辅种)存在{TAG_LONG_KEEP} {torrent.name}, {torrent.tags}")
             if copy_count >= LIMIT_TO_LONG_KEEP_THRESHOLD:
                 qb_add_tag_to_hash_and_print(QB, torrent, TAG_LONG_KEEP)
 
@@ -683,10 +716,15 @@ if __name__ == '__main__':
         if torrent.status.downloading or torrent.status.download_pending:
             print(f"tr下载中跳过标记: {torrent.name}")
             continue
+        files = [file for file in torrent.get_files() if file.selected]  # 改为只筛选待下载的
         # 当前种子 tags list
         current_torrent_tag_list = [element.strip() for element in torrent.labels]
         tr_hash_tags[torrent.hashString] = set(current_torrent_tag_list) - tr_to_remove_old_tags
         save_path = torrent.download_dir
+        for mirror, realPath in TR_DOWNLOAD_PATH_MIRRORS.items():
+            if save_path.startswith(mirror):
+                save_path = save_path.replace(mirror, realPath)
+                break
         content_path = os.path.join(save_path, torrent.name)  # str
         # e=[copy_count, all_torrent_tags, file_size, has_link]
         e = dirt_content_path_values[content_path]
@@ -725,16 +763,20 @@ if __name__ == '__main__':
                         file_size_LIMIT_TO_DELETE_THRESHOLD[content_path] = file_size
                 else:
                     if DEBUG_LOG:
-                        print(
-                            f"tr:未添加辅种数标记, 标签中(包含关联辅种)存在{intersection} {torrent.name}, {current_torrent_tag_list}")
+                        if intersection:
+                            print(
+                                f"tr:未添加辅种数标记, 标签中(包含关联辅种)存在{intersection} {torrent.name}, {current_torrent_tag_list}")
+                        elif siwtchLoneKeep_and_hit:
+                            print(
+                                f"tr:未添加辅种数标记, 标签中(包含关联辅种)存在{TAG_LONG_KEEP} {torrent.name}, {current_torrent_tag_list}")
 
         # 文件类型标记
         if SWITCH_FILE_SUFFIX:
-            if torrent_files_contains(torrent.get_files(), '.iso'):
+            if torrent_files_contains(files, '.iso'):
                 tr_add_tag_to_hash_and_print(TR, torrent, TAG_ISO)
-            elif torrent_files_contains(torrent.get_files(), '.ts'):
+            elif torrent_files_contains(files, '.ts'):
                 tr_add_tag_to_hash_and_print(TR, torrent, TAG_TS)
-            elif torrent_files_contains(torrent.get_files(), '.m2ts'):
+            elif torrent_files_contains(files, '.m2ts'):
                 tr_add_tag_to_hash_and_print(TR, torrent, TAG_M2TS)
 
         # tracker 标记 (TR tracker 标记不太重要)
@@ -814,28 +856,33 @@ if __name__ == '__main__':
             print(
                 f'---qb:做种文件不全,可能是已删除或者拆包或者其他,请手动检查. torrent总个数:{len(qb_TAG_EMPTY_TORRENT)}')
             for info in qb_TAG_EMPTY_TORRENT:
-                print(f'------qb: {info}')
+                print(f'------qb做种文件不全: {info}')
             print(
                 f'---tr:做种文件不全,可能是已删除或者拆包或者其他,请手动检查. torrent总个数:{len(tr_TAG_EMPTY_TORRENT)}')
             for info in tr_TAG_EMPTY_TORRENT:
-                print(f'------tr: {info}')
+                print(f'------tr做种文件不全: {info}')
 
-        # 没有做种视频文件打印,不区分 qb tr
+        # 未做种文件打印,不区分 qb tr
         left_video_files = downloaded_all_video_files \
                            - torrent_video_files_dirt[QB].keys() \
                            - torrent_video_files_dirt[TR].keys() \
                            - torrent_video_files_downloading_dirt[QB].keys() \
                            - torrent_video_files_downloading_dirt[TR].keys()
+        # 去除下载中文件
+        left_video_files = [file for file in left_video_files if not (file.endswith('.!qB')
+                                                                      or file.endswith('.parts')
+                                                                      or file.endswith('.DS_Store'))]
+
         sorted_left_video_files = sorted(left_video_files, key=lambda p: p)
         print(
-            f"没有做种视频文件共{len(sorted_left_video_files)}个, {len(downloaded_all_video_files)}(所有下载目录文件数) - {len(torrent_video_files_dirt[QB].keys()) + len(torrent_video_files_dirt[TR].keys()) + len(torrent_video_files_downloading_dirt[QB].keys()) + len(torrent_video_files_downloading_dirt[TR].keys())}(做种文件数) = {len(sorted_left_video_files)}")
+            f"---未做种文件共{len(sorted_left_video_files)}个: {len(downloaded_all_video_files)}(所有下载目录文件数) - {len(torrent_video_files_dirt[QB].keys()) + len(torrent_video_files_dirt[TR].keys()) + len(torrent_video_files_downloading_dirt[QB].keys()) + len(torrent_video_files_downloading_dirt[TR].keys())}(做种文件数) = {len(sorted_left_video_files)}")
         if SWITCH_PRINT_NOT_UPLOAD_FILE:
             for file in sorted_left_video_files:
-                print(f'没有做种视频文件:{file}')
+                print(f'------未做种文件:{file}')
 
     if media_parent_dirs and len(media_parent_dirs) > 0:
         if SWITCH_PRING_NOT_TORRENT:
-            print('---开始打印媒体库下没有做种视频文件')
+            print('---开始打印媒体库下未做种文件')
             for dir in media_parent_dirs:
                 print_no_link_internal(dir)
         if SWITCH_PRING_MULTY_VIDEO_FILE:
@@ -870,9 +917,11 @@ if __name__ == '__main__':
         qb_to_remove_old_tags = [s for s in qb_old_tags if s.startswith('F-')]
         if SWITCH_REAL_INVOKE:
             qb_client.torrents_delete_tags(qb_to_remove_old_tags)
-        print(f"{prefix()}qb 删除所有旧标签重新标记, {qb_to_remove_old_tags}")
+        if DEBUG_LOG:
+            print(f"{prefix()}qb 删除所有旧标签重新标记, {qb_to_remove_old_tags}")
     if tr_client:
-        print(f"{prefix()}tr 删除所有旧标签重新标记, {tr_to_remove_old_tags}")
+        if DEBUG_LOG:
+            print(f"{prefix()}tr 删除所有旧标签重新标记, {tr_to_remove_old_tags}")
 
     total_file_size = 0
     for size in file_size_LIMIT_TO_DELETE_THRESHOLD.values():
