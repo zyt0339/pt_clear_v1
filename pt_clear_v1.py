@@ -15,10 +15,10 @@ TAG_LONG_KEEP = 'F-长期'
 # 辅种个数标记开关
 SWITCH_TORRENT_COUNT = True
 # 排除这些站点标签, 只要辅种站点中含有这些站, 就取消该文件所有种子的标记,应对某个站正在考核\长期保种场景
-EXCLUDE_CONTAINS_STATIONS = {"海豹", TAG_LONG_KEEP, "KEEP"}
-LIMIT_TO_DELETE_THRESHOLD = 5  # <= x 的会标记, (<=1 就是单站辅种)
+EXCLUDE_CONTAINS_STATIONS = {"海豹", "海棠", TAG_LONG_KEEP, "KEEP"}
+LIMIT_TO_DELETE_THRESHOLD = 30  # <= x 的会标记, (<=1 就是单站辅种)
 LIMIT_TO_LONG_KEEP_THRESHOLD = 15  # >= x 的会 一起标记 TAG_LONG_KEEP
-PRINT_COPY_COUNT = 20  # 只会打印输出辅种数高于此值的种, >= 1000时不再打印
+PRINT_COPY_COUNT = 100  # 只会打印输出辅种数高于此值的种, >= 1000时不再打印
 # 是否增加F-ISO\F-TS\F-m2TS文件类型标记
 SWITCH_FILE_SUFFIX = True
 # 是否增加tracker 异常状态标记,无辅种的可以连源文件一起删除
@@ -27,9 +27,11 @@ SWITCH_TRACKER = True
 SWITCH_LIMIT = True
 _10K = 10240
 _100K = 102400
-_1000K = 1024000
-QB_UOLOAD_LIMIT_SITE = {'麒麟': _100K, '青蛙': _100K, '朱雀': _100K, 'CARPT': _100K, 'AGSVPT': _1000K}
-TR_UOLOAD_LIMIT_SITE = {}
+_1M = 1024 * 1024
+_2M = _1M * 2
+QB_UOLOAD_LIMIT_SITE = {'红豆饭': _100K, '柠檬': _100K, '麒麟': _100K, '青蛙': _100K, '朱雀': _100K,
+                        'CARPT': _100K, 'UBits': _100K}
+TR_UOLOAD_LIMIT_SITE = QB_UOLOAD_LIMIT_SITE
 # 是否打印没有做种的文件列表
 SWITCH_PRINT_NOT_UPLOAD_FILE = True
 download_parent_dirs = {  # 下载根目录,多个盘写多个
@@ -51,11 +53,11 @@ DEBUG_LOG = not SWITCH_REAL_INVOKE
 # 这些文件夹路径中的种子长期保种
 def condition_to_long_keep(content_path):
     return "DouBan.2021.11.11.Top.250.BluRay" in content_path \
-           or "成龙电影合集" in content_path \
-           or "斯皮尔伯格作品合集" in content_path \
-           or "周星驰.Stephen.Chow.1988-2017" in content_path \
-           or "冰与火之歌S01-S08" in content_path \
-           or "绝命毒师S01-S05." in content_path
+        or "成龙电影合集" in content_path \
+        or "斯皮尔伯格作品合集" in content_path \
+        or "周星驰.Stephen.Chow.1988-2017" in content_path \
+        or "冰与火之歌S01-S08" in content_path \
+        or "绝命毒师S01-S05." in content_path 
 
 
 # -------以上为配置开关------
@@ -81,24 +83,18 @@ TAG_ISO = 'F-ISO'  # .iso原盘文件标记
 TAG_TS = 'F-TS'  # .ts 文件标记
 TAG_M2TS = 'F-m2TS'  # .m2ts 文件标记
 
+TAG_TORRENT_ERROR1 = 'F-Error-有辅种'
+TAG_TORRENT_ERROR2 = 'F-Error-无辅种'
+
 TAG_NO_WORKING_TRACKER1 = 'F-tracker未工作-有辅种'
 TAG_NO_WORKING_TRACKER2 = 'F-tracker未工作-无辅种'
-TAG_TRACKERS_ONLY_NOT_EXISTS1 = 'F-tracker_not_exists-有辅种'
-TAG_TRACKERS_ONLY_NOT_EXISTS2 = 'F-tracker_not_exists-无辅种'
-TAG_TRACKERS_ONLY_Bad_Gateway1 = 'F-Bad_Gateway-有辅种'
-TAG_TRACKERS_ONLY_Bad_Gateway2 = 'F-Bad_Gateway-无辅种'
-TAG_TRACKERS_ONLY_Banned1 = 'F-torrent_banned-有辅种'
-TAG_TRACKERS_ONLY_Banned2 = 'F-torrent_banned-无辅种'
-# torrent not registered with this tracker
-# Unregistered torrent
-# 种子尚未上传或者已经被删除
-TAG_TRACKERS_ONLY_NOT_REGIST1 = 'F-torrent_Unregistered-有辅种'
-TAG_TRACKERS_ONLY_NOT_REGIST2 = 'F-torrent_Unregistered-无辅种'
+# TAG_TRACKERS_ONLY_Bad_Gateway1 = 'F-Bad_Gateway-有辅种'
+# TAG_TRACKERS_ONLY_Bad_Gateway2 = 'F-Bad_Gateway-无辅种'
 # Your client is not on the whitelist
-TAG_TRACKERS_CLIENT_NOT_WHITE1 = 'F-client_not_white-有辅种'
-TAG_TRACKERS_CLIENT_NOT_WHITE2 = 'F-client_not_white-无辅种'
+TAG_TRACKERS_CLIENT_NOT_WHITE1 = 'F-clientNotWhite-有辅种'
+TAG_TRACKERS_CLIENT_NOT_WHITE2 = 'F-clientNotWhite-无辅种'
 
-TAG_EMPTY_TORRENT = 'F-源文件删除'
+TAG_EMPTY_TORRENT = 'F-文件不全'
 TAG_IN_TR = 'F-辅种tr'
 TAG_IN_QB = 'F-辅种qb'
 
@@ -231,8 +227,8 @@ def set_limit():
                 for hash in hashs:
                     if hash not in tr_hash_tags:
                         tr_hash_tags[hash] = set()
-                    tr_hash_tags[hash].add(f"F-{readable_file_size(limit_speed, False)}")
-            print(f"{prefix()}tr 限速({readable_file_size(limit_speed, False)})种子个数: {len(hashs)}")
+                    tr_hash_tags[hash].add(f"F-{readable_file_size(limit_speed * 1024, False)}")
+            print(f"{prefix()}tr 限速({readable_file_size(limit_speed * 1024, False)})种子个数: {len(hashs)}")
         else:
             if SWITCH_REAL_INVOKE:
                 tr_client.change_torrent(ids=list(hashs), upload_limit=0, upload_limited=False)
@@ -292,7 +288,7 @@ def torrent_files_contains(torrent_files, suffix) -> bool:
 
 
 # 判断是否所有 tracker 全是一个状态
-def trackers_only_msg(trackers, msg) -> bool:
+def qb_trackers_only_msg(trackers, msg) -> bool:
     working_trackers = [tracker for tracker in trackers if tracker.status != TrackerStatus.DISABLED]
     for tracker in working_trackers:
         if msg not in tracker.msg:
@@ -300,9 +296,25 @@ def trackers_only_msg(trackers, msg) -> bool:
     return True
 
 
+# 判断是否所有 tracker 全是一个状态
+def tr_trackers_only_msg(tracker_stats, msg) -> bool:
+    for tracker_stat in tracker_stats:
+        tracker_msg = tracker_stat.last_announce_result
+        if msg not in tracker_msg:
+            return False
+    return True
+
+
 video_extensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.3gp', '.ts', '.m2ts', '.avi',
                     '.flac', '.mp3', '.test',
                     '.iso', '.rmvb', '.rm', '.mpeg', '.mpg', '.asf', '.m4v', '.f4v', '.strm', '.tp']
+
+no_effective_extensions = ['.png', '.jpg', '.nfo', '.DS_Store', '.ass', '.xml']
+
+
+def is_effective_file(file_path):
+    file_extension = os.path.splitext(file_path)[1]
+    return file_extension not in no_effective_extensions
 
 
 def get_hard_link_count(file_path):
@@ -315,18 +327,13 @@ def get_hard_link_count(file_path):
         return "文件不存在"
 
 
-def is_video_file(file_path):
-    file_extension = os.path.splitext(file_path)[1]
-    return file_extension in video_extensions
-
-
 def has_linked_video_file(folder_path) -> bool:
     # 方案一: 寻找一个种子内视频文件路径,判断硬链接个数 (不行,这是 api 调用, 文件路径在服务端)
     # 方案二(不行): 判断同时包含 2 个标签,(不行, 有些辅种的不包含MOVIEPILOT, 而已整理的不一定都入库了(入库失败 & 辅种瞎标记))
     # has_into_emby = all(item in torrent.tags.split(',') for item in ['MOVIEPILOT', '已整理'])
     if os.path.isfile(folder_path):
         file_abs_path = folder_path
-        if is_video_file(file_abs_path):
+        if is_effective_file(file_abs_path):
             link_count = get_hard_link_count(file_abs_path)
             if link_count > 1:
                 return True
@@ -346,7 +353,7 @@ def has_linked_video_file(folder_path) -> bool:
     for root, dirs, files in os.walk(folder_path):
         for file in files:
             file_abs_path = os.path.join(root, file)
-            if is_video_file(file_abs_path):
+            if is_effective_file(file_abs_path):
                 link_count = get_hard_link_count(file_abs_path)
                 if link_count > 1:
                     return True
@@ -438,6 +445,7 @@ def print_mulity_video_file_internal(directory):
 def now():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S ")
 
+
 # torrent.files torrent.trackers 是 api 调用,尽量减少次数
 if __name__ == '__main__':
     print(
@@ -488,7 +496,7 @@ if __name__ == '__main__':
             print(f"qb下载中跳过标记: {torrent.name}")
             for file in files:
                 abs_file_path = os.path.join(save_path, file.name)
-                if is_video_file(abs_file_path):
+                if is_effective_file(abs_file_path):
                     hashs_qb_or_tr = torrent_video_files_downloading_dirt[QB]
                     if abs_file_path not in hashs_qb_or_tr:
                         hashs_qb_or_tr[abs_file_path] = list()
@@ -511,7 +519,7 @@ if __name__ == '__main__':
 
         for file in files:
             abs_file_path = os.path.join(save_path, file.name)
-            if is_video_file(abs_file_path):
+            if is_effective_file(abs_file_path):
                 hashs_qb_or_tr = torrent_video_files_dirt[QB]
                 if abs_file_path not in hashs_qb_or_tr:
                     hashs_qb_or_tr[abs_file_path] = list()
@@ -523,7 +531,7 @@ if __name__ == '__main__':
             print(f"tr下载中跳过标记: {torrent.name}")
             for file in torrent.get_files():
                 abs_file_path = os.path.join(save_path, file.name)
-                if is_video_file(abs_file_path):
+                if is_effective_file(abs_file_path):
                     hashs_qb_or_tr = torrent_video_files_downloading_dirt[TR]
                     if abs_file_path not in hashs_qb_or_tr:
                         hashs_qb_or_tr[abs_file_path] = list()
@@ -545,7 +553,7 @@ if __name__ == '__main__':
 
         for file in torrent.get_files():
             abs_file_path = os.path.join(save_path, file.name)
-            if is_video_file(abs_file_path):
+            if is_effective_file(abs_file_path):
                 hashs_qb_or_tr = torrent_video_files_dirt[TR]
                 if abs_file_path not in hashs_qb_or_tr:
                     hashs_qb_or_tr[abs_file_path] = list()
@@ -558,6 +566,7 @@ if __name__ == '__main__':
     print(f'{now()}开始收集 qb 中待标记信息...')
     size = len(qb_sorted_torrents_infos)
     tr_to_remove_old_tags = set([s for s in tr_old_tags if s.startswith('F-')])
+    TAG_LONG_KEEP_in_EXCLUDE_CONTAINS_STATIONS = TAG_LONG_KEEP in EXCLUDE_CONTAINS_STATIONS
     for index, torrent in enumerate(qb_sorted_torrents_infos):
         save_path = torrent.save_path
         files = qb_cache_hash_files[torrent.hash]
@@ -579,13 +588,26 @@ if __name__ == '__main__':
         name = e[4]  # 种子 name
         in_tr = e[6]  # 是否有 tr 辅种
 
+        # 是否入了媒体库(有硬链接等于入了媒体库),用其中一个视频文件路径判断
+        torrent_long_keep = False
+        if SWITCH_EMBY:
+            if has_link:
+                qb_add_tag_to_hash_and_print(QB, torrent, TAG_IN_EMBY)
+            else:
+                if "KEEP" not in current_torrent_tag_list:
+                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_NOT_IN_EMBY)
+            if condition_to_long_keep(content_path):
+                qb_add_tag_to_hash_and_print(QB, torrent, TAG_LONG_KEEP)
+                torrent_long_keep = True
+
         # 辅种个数标记
         if SWITCH_TORRENT_COUNT:
             # 辅种小于 x 标记
             if copy_count <= LIMIT_TO_DELETE_THRESHOLD:
                 # 先排除部分站点-两个列表没有交集
                 intersection = EXCLUDE_CONTAINS_STATIONS.intersection(all_torrent_tags)
-                if not intersection:
+                siwtchLoneKeep_and_hit = TAG_LONG_KEEP_in_EXCLUDE_CONTAINS_STATIONS and torrent_long_keep
+                if not intersection and not siwtchLoneKeep_and_hit:
                     tag = TAG_COPY_COUNT % copy_count
                     qb_add_tag_to_hash_and_print(QB, torrent, tag)
                     file_torrent_size_LIMIT_TO_DELETE_THRESHOLD += file_size
@@ -618,43 +640,27 @@ if __name__ == '__main__':
                     qb_add_tag_to_hash_and_print(QB, torrent, TAG_NO_WORKING_TRACKER1)
                 else:
                     qb_add_tag_to_hash_and_print(QB, torrent, TAG_NO_WORKING_TRACKER2)
-            elif trackers_only_msg(trackers, 'Torrent not exists'):
+            # elif trackers_only_msg(trackers, 'Bad Gateway'):
+            #     if copy_count > 1:
+            #         qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_Bad_Gateway1)
+            #     else:
+            #         qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_Bad_Gateway2)
+            elif qb_trackers_only_msg(trackers, 'orrent not registered') \
+                    or qb_trackers_only_msg(trackers, 'Unregistered torrent') \
+                    or qb_trackers_only_msg(trackers, 'orrent not exists') \
+                    or qb_trackers_only_msg(trackers, 'orrent banned') \
+                    or qb_trackers_only_msg(trackers, 'orrent delete') \
+                    or qb_trackers_only_msg(trackers, '被删除'):
                 if copy_count > 1:
-                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_NOT_EXISTS1)
+                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_TORRENT_ERROR1)
                 else:
-                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_NOT_EXISTS2)
-            elif trackers_only_msg(trackers, 'Bad Gateway'):
-                if copy_count > 1:
-                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_Bad_Gateway1)
-                else:
-                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_Bad_Gateway2)
-            elif trackers_only_msg(trackers, 'torrent banned'):
-                if copy_count > 1:
-                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_Banned1)
-                else:
-                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_Banned2)
-            elif trackers_only_msg(trackers, 'torrent not registered with this tracker') \
-                    or trackers_only_msg(trackers, 'Unregistered torrent') \
-                    or trackers_only_msg(trackers, '已经被删除'):
-                if copy_count > 1:
-                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_NOT_REGIST1)
-                else:
-                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_NOT_REGIST2)
-            elif trackers_only_msg(trackers, 'client is not on the whitelist'):
+                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_TORRENT_ERROR2)
+            elif qb_trackers_only_msg(trackers, 'client is not on the whitelist'):
                 if copy_count > 1:
                     qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_CLIENT_NOT_WHITE1)
                 else:
                     qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_CLIENT_NOT_WHITE2)
 
-        # 是否入了媒体库(有硬链接等于入了媒体库),用其中一个视频文件路径判断
-        if SWITCH_EMBY:
-            if "KEEP" not in current_torrent_tag_list:
-                if has_link:
-                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_IN_EMBY)
-                else:
-                    qb_add_tag_to_hash_and_print(QB, torrent, TAG_NOT_IN_EMBY)
-            if condition_to_long_keep(content_path):
-                qb_add_tag_to_hash_and_print(QB, torrent, TAG_LONG_KEEP)
         # 是否在 tr 辅种
         if SWITCH_MARK_IN_TR_OR_QB:
             if in_tr:
@@ -690,13 +696,28 @@ if __name__ == '__main__':
         has_link = e[3]  # 视频文件是否已硬链接
         name = e[4]  # 种子 name
         in_qb = e[5]  # 是否有 qb 辅种
+
+        # 是否入了媒体库(有硬链接等于入了媒体库),用其中一个视频文件路径判断
+        torrent_long_keep = False
+        if SWITCH_EMBY:
+            if "KEEP" not in current_torrent_tag_list:
+                if has_link:
+                    tr_add_tag_to_hash_and_print(TR, torrent, TAG_IN_EMBY)
+                else:
+                    tr_add_tag_to_hash_and_print(TR, torrent, TAG_NOT_IN_EMBY)
+
+            if condition_to_long_keep(content_path):
+                # tr_add_tag_to_hash_and_print(TR, torrent, TAG_LONG_KEEP) tr 不用这个标签,都是长期的
+                torrent_long_keep = True
+
         # 辅种个数标记
         if SWITCH_TORRENT_COUNT:
             # 辅种小于 x 标记
             if copy_count <= LIMIT_TO_DELETE_THRESHOLD:
                 # 先排除部分站点-两个列表没有交集
                 intersection = EXCLUDE_CONTAINS_STATIONS.intersection(all_torrent_tags)
-                if not intersection:
+                siwtchLoneKeep_and_hit = TAG_LONG_KEEP_in_EXCLUDE_CONTAINS_STATIONS and torrent_long_keep
+                if not intersection and not siwtchLoneKeep_and_hit:
                     tag = TAG_COPY_COUNT % copy_count
                     tr_add_tag_to_hash_and_print(TR, torrent, tag)
                     file_torrent_size_LIMIT_TO_DELETE_THRESHOLD += file_size
@@ -717,53 +738,31 @@ if __name__ == '__main__':
                 tr_add_tag_to_hash_and_print(TR, torrent, TAG_M2TS)
 
         # tracker 标记 (TR tracker 标记不太重要)
-        # if SWITCH_TRACKER:
-        #     # 没有正在工作的 tracker
-        #     working_trackers = [tracker for tracker in trackers if
-        #                         tracker.status != TrackerStatus.DISABLED]
-        #     if len(working_trackers) == 0:
-        #         if copy_count > 1:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_NO_WORKING_TRACKER1)
-        #         else:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_NO_WORKING_TRACKER2)
-        #     elif trackers_only_msg(trackers, 'Torrent not exists'):
-        #         if copy_count > 1:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_ONLY_NOT_EXISTS1)
-        #         else:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_ONLY_NOT_EXISTS2)
-        #     elif trackers_only_msg(trackers, 'Bad Gateway'):
-        #         if copy_count > 1:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_ONLY_Bad_Gateway1)
-        #         else:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_ONLY_Bad_Gateway2)
-        #     elif trackers_only_msg(trackers, 'torrent banned'):
-        #         if copy_count > 1:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_ONLY_Banned1)
-        #         else:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_ONLY_Banned2)
-        #     elif trackers_only_msg(trackers, 'torrent not registered with this tracker') \
-        #             or trackers_only_msg(trackers, 'Unregistered torrent') \
-        #             or trackers_only_msg(trackers, '已经被删除'):
-        #         if copy_count > 1:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_ONLY_NOT_REGIST1)
-        #         else:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_ONLY_NOT_REGIST2)
-        #     elif trackers_only_msg(trackers, 'client is not on the whitelist'):
-        #         if copy_count > 1:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_CLIENT_NOT_WHITE1)
-        #         else:
-        #             tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_CLIENT_NOT_WHITE2)
-
-        # 是否入了媒体库(有硬链接等于入了媒体库),用其中一个视频文件路径判断
-        if SWITCH_EMBY:
-            if "KEEP" not in current_torrent_tag_list:
-                if has_link:
-                    tr_add_tag_to_hash_and_print(TR, torrent, TAG_IN_EMBY)
+        if SWITCH_TRACKER:
+            # 没有正在工作的 tracker
+            trackers = torrent.tracker_stats
+            # elif trackers_only_msg(trackers, 'Bad Gateway'):
+            #     if copy_count > 1:
+            #         qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_Bad_Gateway1)
+            #     else:
+            #         qb_add_tag_to_hash_and_print(QB, torrent, TAG_TRACKERS_ONLY_Bad_Gateway2)
+            if tr_trackers_only_msg(trackers, 'orrent not registered') \
+                    or tr_trackers_only_msg(trackers, 'Unregistered torrent') \
+                    or tr_trackers_only_msg(trackers, 'orrent not exists') \
+                    or tr_trackers_only_msg(trackers, 'orrent banned') \
+                    or tr_trackers_only_msg(trackers, 'orrent delete') \
+                    or tr_trackers_only_msg(trackers, '被删除'):
+                if copy_count > 1:
+                    tr_add_tag_to_hash_and_print(TR, torrent, TAG_TORRENT_ERROR1)
                 else:
-                    tr_add_tag_to_hash_and_print(TR, torrent, TAG_NOT_IN_EMBY)
-            # if condition_to_long_keep(content_path): qb 不用这个标签
-            #     tr_add_tag_to_hash_and_print(TR, torrent, TAG_LONG_KEEP)
-        # 是否在 tr 辅种
+                    tr_add_tag_to_hash_and_print(TR, torrent, TAG_TORRENT_ERROR2)
+            elif tr_trackers_only_msg(trackers, 'client is not on the whitelist'):
+                if copy_count > 1:
+                    tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_CLIENT_NOT_WHITE1)
+                else:
+                    tr_add_tag_to_hash_and_print(TR, torrent, TAG_TRACKERS_CLIENT_NOT_WHITE2)
+
+        # 是否在 qb 辅种
         if SWITCH_MARK_IN_TR_OR_QB:
             if in_qb:
                 tr_add_tag_to_hash_and_print(TR, torrent, TAG_IN_QB)
@@ -772,13 +771,13 @@ if __name__ == '__main__':
             intersection = set(TR_UOLOAD_LIMIT_SITE).intersection(current_torrent_tag_list)
             if intersection:  # 理论上标签应该只有 1 个交集,就是站点名称,所以取 0
                 site = list(intersection)[0]
-                limit_speed = TR_UOLOAD_LIMIT_SITE[site]
+                limit_speed = int(TR_UOLOAD_LIMIT_SITE[site] / 1024)
                 tr_add_limit_upload_to_hash_and_print(site, TR, torrent, limit_speed)
             else:
                 tr_add_limit_upload_to_hash_and_print(None, TR, torrent, 0)
 
     # 步骤3.开始标记,多个种子请求一次 API 效率更高
-    print(f"{now()}步骤3.开始添加标记, 多个种子请求一次 API 效率更高...")
+    print(f"{now()}步骤3.开始添加标记...")
     #  获取已经被删除源文件的种子
     if download_parent_dirs and len(download_parent_dirs) > 0:
         downloaded_all_video_files = set()  # 实际存在的所有文件
@@ -787,27 +786,39 @@ if __name__ == '__main__':
                 for file in files:
                     file_abs_path = os.path.join(root, file)
                     if '@eaDir' not in file_abs_path:
-                        if is_video_file(file_abs_path):
+                        if is_effective_file(file_abs_path):
                             downloaded_all_video_files.add(file_abs_path)
-        # 有做种但源文件已删除,qb&tr 种子中的文件集合减去实际存在的文件
+        # 做种文件残缺,可能是已删除或者拆包或者其他,请手动检查,qb&tr 种子中的文件集合减去实际存在的文件
+
         if SWITCH_TRACKER:
             empty_video_files = (torrent_video_files_dirt[QB].keys() | torrent_video_files_dirt[
                 TR].keys()) - downloaded_all_video_files
             sorted_empty_video_files = sorted(empty_video_files, key=lambda p: p)
+            qb_TAG_EMPTY_TORRENT = set()
+            tr_TAG_EMPTY_TORRENT = set()
             for file in sorted_empty_video_files:
                 if file in torrent_video_files_dirt[QB]:
                     torrents = torrent_video_files_dirt[QB][file]
                     for torrent in torrents:
                         qb_add_tag_to_hash_and_print(QB, torrent, TAG_EMPTY_TORRENT)
-                        print(
-                            f'qb:有做种但源文件已删除, {torrent.name} {torrent.tags}, 文件:{file}')
+                        qb_TAG_EMPTY_TORRENT.add(f'{torrent.name} {torrent.tags}')
+                        if (DEBUG_LOG):
+                            print(f'qb:有做种但源文件已删除, {torrent.name} {torrent.tags}, 文件:{file}')
                 if file in torrent_video_files_dirt[TR]:
                     torrents = torrent_video_files_dirt[TR][file]
                     for torrent in torrents:
                         tr_add_tag_to_hash_and_print(TR, torrent, TAG_EMPTY_TORRENT)
-                        print(
-                            f'tr:有做种但源文件已删除, {torrent.name} {torrent.labels}, 文件:{file}')
-            # print(f'有做种但源文件已删除torrent个数:{len(hashs_to_add_TAG_TAG_EMPTY_TORRENT)}')
+                        tr_TAG_EMPTY_TORRENT.add(f'{torrent.name} {torrent.labels}')
+                        if (DEBUG_LOG):
+                            print(f'tr:有做种但源文件已删除, {torrent.name} {torrent.labels}, 文件:{file}')
+            print(
+                f'---qb:做种文件不全,可能是已删除或者拆包或者其他,请手动检查. torrent总个数:{len(qb_TAG_EMPTY_TORRENT)}')
+            for info in qb_TAG_EMPTY_TORRENT:
+                print(f'------qb: {info}')
+            print(
+                f'---tr:做种文件不全,可能是已删除或者拆包或者其他,请手动检查. torrent总个数:{len(tr_TAG_EMPTY_TORRENT)}')
+            for info in tr_TAG_EMPTY_TORRENT:
+                print(f'------tr: {info}')
 
         # 没有做种视频文件打印,不区分 qb tr
         left_video_files = downloaded_all_video_files \
@@ -879,16 +890,10 @@ if __name__ == '__main__':
         add_tags(TAG_M2TS)
 
     if SWITCH_TRACKER:
+        add_tags(TAG_TORRENT_ERROR1)
+        add_tags(TAG_TORRENT_ERROR2)
         add_tags(TAG_NO_WORKING_TRACKER1)
         add_tags(TAG_NO_WORKING_TRACKER2)
-        add_tags(TAG_TRACKERS_ONLY_NOT_EXISTS1)
-        add_tags(TAG_TRACKERS_ONLY_NOT_EXISTS2)
-        add_tags(TAG_TRACKERS_ONLY_Bad_Gateway1)
-        add_tags(TAG_TRACKERS_ONLY_Bad_Gateway2)
-        add_tags(TAG_TRACKERS_ONLY_Banned1)
-        add_tags(TAG_TRACKERS_ONLY_Banned2)
-        add_tags(TAG_TRACKERS_ONLY_NOT_REGIST1)
-        add_tags(TAG_TRACKERS_ONLY_NOT_REGIST2)
         add_tags(TAG_TRACKERS_CLIENT_NOT_WHITE1)
         add_tags(TAG_TRACKERS_CLIENT_NOT_WHITE2)
 
