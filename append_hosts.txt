@@ -1,0 +1,7 @@
+assets.fanart.tv
+github.com
+api.themoviedb.org
+raw.githubusercontent.com
+api4.thetvdb.com
+api.github.com
+#index.docker.io
