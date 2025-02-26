@@ -110,6 +110,8 @@ TR_CONN_INFO = dict(
 **3 运行脚本**
 运行入口自己选，下面介绍MP插件运行和群辉自定义脚本运行俩方式
 **MP插件运行**：
+![](https://invites.fun/assets/files/2025-02-18/1739846141-630684-image.png)
+
 [upl-image-preview url=https://invites.fun/assets/files/2025-02-18/1739846141-630684-image.png]
 [upl-image-preview url=https://invites.fun/assets/files/2025-02-18/1739846129-169151-image.png]
 **群辉自定义脚本**
