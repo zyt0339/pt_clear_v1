@@ -111,11 +111,9 @@ TR_CONN_INFO = dict(
 运行入口自己选，下面介绍MP插件运行和群辉自定义脚本运行俩方式
 **MP插件运行**：
 ![](https://invites.fun/assets/files/2025-02-18/1739846141-630684-image.png)
-
-[upl-image-preview url=https://invites.fun/assets/files/2025-02-18/1739846141-630684-image.png]
-[upl-image-preview url=https://invites.fun/assets/files/2025-02-18/1739846129-169151-image.png]
+![](https://invites.fun/assets/files/2025-02-18/1739846129-169151-image.png)
 **群辉自定义脚本**
-[upl-image-preview url=https://invites.fun/assets/files/2025-02-18/1739846193-154397-image.png]
+![](https://invites.fun/assets/files/2025-02-18/1739846193-154397-image.png)
 可以稍微大胆运行，本脚本不会主动删东西，只会加标签或者打印日志。初次运行还有这个开关：
 ```
 # 是否真执行qb标签等, False时只模拟打印日志不真正给 qb 加标签
@@ -124,10 +122,10 @@ SWITCH_REAL_INVOKE = True
 
 ### **效果展示**
 （部分效果）
-[upl-image-preview url=https://invites.fun/assets/files/2025-02-18/1739846295-59813-image.png]
-[upl-image-preview url=https://invites.fun/assets/files/2025-02-18/1739846348-982001-image.png]
-[upl-image-preview url=https://invites.fun/assets/files/2025-02-18/1739846367-913817-image.png]
-[upl-image-preview url=https://invites.fun/assets/files/2025-02-18/1739846434-703597-image.png]
+![](https://invites.fun/assets/files/2025-02-18/1739846295-59813-image.png)
+![](https://invites.fun/assets/files/2025-02-18/1739846348-982001-image.png)
+![](https://invites.fun/assets/files/2025-02-18/1739846367-913817-image.png)
+![](https://invites.fun/assets/files/2025-02-18/1739846434-703597-image.png)
 ```
 2025-02-18 10:07:35 当前运行主机 ip:192.168.1.111, 服务端 ip:192.168.1.111
 qb1共1248个种子; qb2共428个种子; tr共4509个种子;
@@ -185,11 +183,11 @@ specific_process_tr_tags:  len=1088
 ### **脚本附件** 
 全在这一个py文件里了
 ```
-教程字数超65535了,改为放附件区。qb-torrent-mark.py文件（文件名不重要，一开始只给qb写的，后面加上了tr的支持）
+qb-torrent-mark.py文件（文件名不重要，一开始只给qb写的，后面加上了tr的支持）
 ```
 ### **番外篇**
 qb添加了这么多标签，日常观感挺难受的，所以我的食用方式是要清理资源前手动执行一下标签，清理完一波后将这些标签清理了，所以还有个清理这堆标签的脚本，使用方式也是打开改端口号用户名啥的成你的，运行。
 ```
-教程字数超65535了,改为放附件区 qb-delete-tag.py文件
+qb-delete-tag.py文件
 ```
 
