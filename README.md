@@ -20,7 +20,7 @@
 ### **详细使用步骤**
 我的下载器分布是这样的，qb1观影下载，qb2刷流，tr保种，所以脚本覆盖这3个下载器，当然，不需的下载器配置瞎写即可(会自己登录失败)。
 **1 安装依赖库：**(如果MP内执行已自带，无需安装，如果群辉控制面板-自定义脚本运行就需要安装)
-一起qb依赖库、tr依赖库:curl -O https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && rm get-pip.py && python -m pip install qbittorrent-api && pip install transmission-rpc -U
+一起qb依赖库、tr依赖库:`curl -O https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && rm get-pip.py && python -m pip install qbittorrent-api && pip install transmission-rpc -U`
 **2 下载脚本文件**
 本地新建xxx_clean.py文件，以txt方式打开，将附件中的脚本内容全部复制粘贴进去，保存
 **3 修改脚本内配置**
